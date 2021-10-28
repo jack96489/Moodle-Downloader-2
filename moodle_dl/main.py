@@ -253,11 +253,16 @@ def run_main(
 
     PathTools.restricted_filenames = config.get_restricted_filenames()
 
+    path = storage_path
+    if config.get_relative_paths():
+        path = ".\\"
+        Log.info("using relative paths")
+
     try:
         if not IS_DEBUG:
             process_lock.lock(storage_path)
 
-        moodle = MoodleService(config, storage_path, skip_cert_verify, log_responses)
+        moodle = MoodleService(config, path, skip_cert_verify, log_responses)
 
         msg_checking_for_changes = 'Checking for changes for the configured Moodle-Account....'
         logging.debug(msg_checking_for_changes)
@@ -278,9 +283,9 @@ def run_main(
         Log.debug(msg_start_downloading)
 
         if without_downloading_files:
-            downloader = FakeDownloadService(changed_courses, moodle, storage_path)
+            downloader = FakeDownloadService(changed_courses, moodle, path)
         else:
-            downloader = DownloadService(changed_courses, moodle, storage_path, skip_cert_verify, ignore_ytdl_errors)
+            downloader = DownloadService(changed_courses, moodle, path, skip_cert_verify, ignore_ytdl_errors)
         downloader.run()
         failed_downloads = downloader.get_failed_url_targets()
 
@@ -585,7 +590,7 @@ def main(args=None):
     verbose = args.verbose
     username = args.username
     password = args.password
-    storage_path = ".\\"  # args.path
+    storage_path = args.path
     skip_cert_verify = args.skip_cert_verify
     ignore_ytdl_errors = args.ignore_ytdl_errors
     without_downloading_files = args.without_downloading_files
