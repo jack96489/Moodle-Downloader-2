@@ -192,6 +192,7 @@ def run_change_notification_xmpp(storage_path):
 def run_main(
     storage_path,
     verbose=False,
+    quiet=False,
     skip_cert_verify=False,
     ignore_ytdl_errors=False,
     without_downloading_files=False,
@@ -213,6 +214,8 @@ def run_main(
     app_log = logging.getLogger()
     if verbose:
         app_log.setLevel(logging.DEBUG)
+    elif quiet:
+        app_log.setLevel(logging.WARNING)
     else:
         app_log.setLevel(logging.INFO)
     app_log.addHandler(log_handler)
@@ -371,7 +374,7 @@ def get_parser():
     Creates a new argument parser.
     """
     parser = argparse.ArgumentParser(
-        description=('Moodle Downloader 2 helps you download all the course files  of your Moodle account.')
+        description='Moodle Downloader 2 helps you download all the course files  of your Moodle account.'
     )
     group = parser.add_mutually_exclusive_group()
 
@@ -523,7 +526,7 @@ def get_parser():
         '--threads',
         default=5,
         type=int,
-        help=('Sets the number of download threads. (default: %(default)s)'),
+        help='Sets the number of download threads. (default: %(default)s)',
     )
 
     parser.add_argument(
@@ -531,7 +534,7 @@ def get_parser():
         '--username',
         default=None,
         type=str,
-        help=('Specify username to skip the query when creating a new token.'),
+        help='Specify username to skip the query when creating a new token.',
     )
 
     parser.add_argument(
@@ -539,15 +542,24 @@ def get_parser():
         '--password',
         default=None,
         type=str,
-        help=('Specify password to skip the query when creating a new token.'),
+        help='Specify password to skip the query when creating a new token.',
     )
 
-    parser.add_argument(
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument(
         '-v',
         '--verbose',
         default=False,
         action='store_true',
         help='Print various debugging information',
+    )
+
+    group.add_argument(
+        '-q',
+        '--quiet',
+        default=False,
+        action='store_true',
+        help='Print only warnings',
     )
 
     parser.add_argument(
@@ -604,6 +616,7 @@ def main(args=None):
 
     use_sso = args.sso
     verbose = args.verbose
+    quiet = args.quiet
     username = args.username
     password = args.password
     if args.max_path_length_workaround:
@@ -636,4 +649,4 @@ def main(args=None):
     elif args.add_all_visible_courses:
         run_add_all_visible_courses(storage_path, skip_cert_verify)
     else:
-        run_main(storage_path, verbose, skip_cert_verify, ignore_ytdl_errors, without_downloading_files, log_responses)
+        run_main(storage_path, verbose, quiet, skip_cert_verify, ignore_ytdl_errors, without_downloading_files, log_responses)
