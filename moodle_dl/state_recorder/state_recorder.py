@@ -634,7 +634,7 @@ class StateRecorder:
 
                     cursor.execute(
                         """UPDATE files
-                        SET notified = 0, deleted = 1, time_stamp = :time_stamp
+                        SET notified = 0, deleted = 1, time_stamp = :time_stamp, saved_to = :saved_to
                         WHERE file_id = :file_id;
                         """,
                         data,

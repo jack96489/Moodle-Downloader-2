@@ -89,9 +89,6 @@ class DownloadService:
         self.last_status_timestamp = time.time()
         self.total_files = 0
 
-        # delete files, that should be deleted
-        self.state_recorder.batch_delete_files(self.courses)
-
         if skip_cert_verify:
             self.ssl_context = ssl._create_unverified_context()
         else:
@@ -121,6 +118,14 @@ class DownloadService:
                     )
 
                     self.total_files += 1
+                else:
+                    old_name = file.saved_to
+                    filepath = old_name.rpartition("\\")
+                    file.saved_to = filepath[0] + "\\[DELETED] " + filepath[2]
+                    os.rename(old_name, file.saved_to)
+
+        # delete files, that should be deleted
+        self.state_recorder.batch_delete_files(self.courses)
 
         logging.debug('Queue contains %s URLTargets', self.total_files)
 
