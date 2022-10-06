@@ -133,12 +133,12 @@ class OfflineService:
         stored_files = self.state_recorder.get_old_files()
 
         if len(stored_files) <= 0:
-            print('No old copies of files found. Nothing to do.')
+            print('No old files found. Nothing to do.')
             return
 
         print(
             'This management tool will navigate you through a menu to'
-            + ' selectively remove old copies of files from the database '
+            + ' selectively remove deleted files and old copies of files from the database '
             + ' and form the file system'
         )
 
@@ -176,7 +176,7 @@ class OfflineService:
             if selected_sections_id == 0:
                 selected_sections = sections[1:]
                 break
-            elif (selected_sections_id) < len(sections):
+            elif selected_sections_id < len(sections):
                 selected_sections.append(sections[selected_sections_id])
 
         file_options = []

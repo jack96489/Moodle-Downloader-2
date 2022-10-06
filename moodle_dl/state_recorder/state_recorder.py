@@ -312,7 +312,7 @@ class StateRecorder:
 
         cursor.execute(
             """SELECT DISTINCT course_id, course_fullname
-            FROM files WHERE old_file_id IS NOT NULL"""
+            FROM files WHERE old_file_id IS NOT NULL OR deleted = 1"""
         )
 
         course_rows = cursor.fetchall()
@@ -343,6 +343,18 @@ class StateRecorder:
 
                 notify_file = File.fromRow(old_file)
                 course.files.append(notify_file)
+
+            cursor.execute(
+                """SELECT *
+                FROM files
+                WHERE course_id = ?
+                AND deleted = 1""",
+                (course.id,),
+            )
+            deleted = cursor.fetchall()
+            for d in deleted:
+                deleted_file = File.fromRow(d)
+                course.files.append(deleted_file)
 
             stored_courses.append(course)
 
