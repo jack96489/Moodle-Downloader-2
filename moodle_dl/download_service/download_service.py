@@ -6,6 +6,7 @@ import shutil
 import logging
 import threading
 from queue import Queue
+from typing import List
 import certifi
 
 from yt_dlp.utils import format_bytes
@@ -15,6 +16,7 @@ from moodle_dl.download_service.path_tools import PathTools
 from moodle_dl.download_service.url_target import URLTarget
 from moodle_dl.download_service.downloader import Downloader
 from moodle_dl.moodle_connector.moodle_service import MoodleService
+from moodle_dl.moodle_connector.ssl_helper import configure_ssl_context
 
 
 class DownloadService:
@@ -29,7 +31,7 @@ class DownloadService:
 
     def __init__(
         self,
-        courses: [Course],
+        courses: List[Course],
         moodle_service: MoodleService,
         storage_path: str,
         skip_cert_verify: bool = False,
@@ -93,6 +95,7 @@ class DownloadService:
             self.ssl_context = ssl._create_unverified_context()
         else:
             self.ssl_context = ssl.create_default_context(cafile=certifi.where())
+        configure_ssl_context(self.ssl_context)
         self.skip_cert_verify = skip_cert_verify
 
         # Prepopulate queue with any files that were given

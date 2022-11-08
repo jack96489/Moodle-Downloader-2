@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Dict, List
 
 from moodle_dl.moodle_connector.request_helper import RequestHelper
 from moodle_dl.state_recorder.course import Course
@@ -14,7 +15,7 @@ class ForumsHandler:
         self.request_helper = request_helper
         self.version = version
 
-    def fetch_forums(self, courses: [Course]) -> {int: {int: {}}}:
+    def fetch_forums(self, courses: List[Course]) -> Dict[int, Dict[int, Dict]]:
         """
         Fetches the Databases List for all courses from the
         Moodle system
@@ -81,7 +82,7 @@ class ForumsHandler:
 
         return result
 
-    def fetch_forums_posts(self, forums: {}, last_timestamps_per_forum: {}) -> {}:
+    def fetch_forums_posts(self, forums: Dict, last_timestamps_per_forum: Dict) -> Dict:
         """
         Fetches for the forums list of all courses the additionally
         entries. This is kind of waste of resources, because there
@@ -165,7 +166,7 @@ class ForumsHandler:
 
         return forums
 
-    def _get_files_of_discussions(self, latest_discussions: []) -> []:
+    def _get_files_of_discussions(self, latest_discussions: List) -> List:
         result = []
 
         for counter, discussion in enumerate(latest_discussions):
@@ -192,7 +193,10 @@ class ForumsHandler:
                 'sortdirection': 'ASC',
             }
 
-            posts_result = self.request_helper.post_REST('mod_forum_get_forum_discussion_posts', data)
+            if self.version >= 2019052000:
+                posts_result = self.request_helper.post_REST('mod_forum_get_discussion_posts', data)
+            else:
+                posts_result = self.request_helper.post_REST('mod_forum_get_forum_discussion_posts', data)
 
             posts = posts_result.get('posts', [])
 
@@ -200,16 +204,23 @@ class ForumsHandler:
                 post_message = post.get('message', '')
                 if post_message is None:
                     post_message = ''
-                post_modified = post.get('modified', 0)
 
                 post_id = post.get('id', 0)
-                post_parent = post.get('parent', 0)
-                post_userfullname = post.get('userfullname', '')
+
+                if self.version >= 2019052000:
+                    post_parent = post.get('parentid', 0)
+                    post_userfullname = post.get('author', {}).get('fullname', None)
+                    post_modified = post.get('timecreated', 0)
+                else:
+                    post_parent = post.get('parent', 0)
+                    post_userfullname = post.get('userfullname', '')
+                    post_modified = post.get('modified', 0)
+
                 if post_userfullname is None:
                     post_userfullname = "Unknown"
 
                 post_filename = PathTools.to_valid_name('[' + str(post_id) + '] ' + post_userfullname)
-                if post_parent != 0:
+                if post_parent is not None and post_parent != 0:
                     post_filename = PathTools.to_valid_name(post_filename + ' response to [' + str(post_parent) + ']')
 
                 post_path = PathTools.to_valid_name(

@@ -6,6 +6,7 @@ import time
 import shlex
 import socket
 import shutil
+from typing import Dict, List
 import urllib
 import logging
 import posixpath
@@ -31,6 +32,7 @@ from moodle_dl.state_recorder.file import File
 from moodle_dl.state_recorder.course import Course
 from moodle_dl.download_service.path_tools import PathTools
 from moodle_dl.moodle_connector.request_helper import RequestHelper
+from moodle_dl.moodle_connector.ssl_helper import custom_session
 from moodle_dl.ydl_extractors.extractors import add_additional_extractors
 
 
@@ -45,11 +47,11 @@ class URLTarget(object):
         course: Course,
         destination: str,
         token: str,
-        thread_report: [],
+        thread_report: List,
         fs_lock: threading.Lock,
         ssl_context: ssl.SSLContext,
         skip_cert_verify: bool,
-        options: {},
+        options: Dict,
     ):
         """
         Initiating an URL target.
@@ -96,7 +98,7 @@ class URLTarget(object):
             total_size = self.file.content_filesize
 
         percent = 100
-        if total_size != 0:
+        if total_size > 0:
             percent = int(self.downloaded * 100 / total_size)
 
         self.thread_report[self.thread_id]['percentage'] = percent
@@ -382,7 +384,7 @@ class URLTarget(object):
         isHTML = False
         new_filename = ""
         total_bytes_estimate = -1
-        session = requests.Session()
+        session = custom_session(self.verify_cert)
 
         if cookies_path is not None:
             session.cookies = MozillaCookieJar(cookies_path)
@@ -393,7 +395,6 @@ class URLTarget(object):
             response = session.head(
                 url_to_download,
                 headers=RequestHelper.stdHeader,
-                verify=self.verify_cert,
                 allow_redirects=True,
                 timeout=60,
             )

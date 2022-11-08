@@ -1,6 +1,7 @@
 import re
 import os
 import json
+from typing import Dict
 import urllib
 import logging
 
@@ -11,6 +12,7 @@ import urllib3
 import requests
 
 from requests.exceptions import RequestException
+from moodle_dl.moodle_connector.ssl_helper import custom_session
 
 
 class RequestHelper:
@@ -60,7 +62,7 @@ class RequestHelper:
         urllib3.disable_warnings()
         # logging.captureWarnings(True)
 
-    def post_URL(self, url: str, data: {str: str} = None, cookie_jar_path: str = None):
+    def post_URL(self, url: str, data: Dict[str,str] = None, cookie_jar_path: str = None):
         """
         Sends a POST request to a specific URL, including saving of cookies in cookie jar.
         @param url: The url to which the request is sent. (the moodle base url is not added to the given URL)
@@ -73,7 +75,7 @@ class RequestHelper:
         if data is not None:
             data_urlencoded = RequestHelper.recursive_urlencode(data)
 
-        session = requests.Session()
+        session = custom_session(self.verify)
 
         if cookie_jar_path is not None:
             session.cookies = MozillaCookieJar(cookie_jar_path)
@@ -82,7 +84,7 @@ class RequestHelper:
                 session.cookies.load(ignore_discard=True, ignore_expires=True)
 
         try:
-            response = session.post(url, data=data_urlencoded, headers=self.stdHeader, verify=self.verify, timeout=60)
+            response = session.post(url, data=data_urlencoded, headers=self.stdHeader, timeout=60)
         except RequestException as error:
             raise ConnectionError(f"Connection error: {str(error)}") from None
 
@@ -103,7 +105,7 @@ class RequestHelper:
         @return: The resulting Response object.
         """
 
-        session = requests.Session()
+        session = custom_session(self.verify)
 
         if cookie_jar_path is not None:
             session.cookies = MozillaCookieJar(cookie_jar_path)
@@ -111,7 +113,7 @@ class RequestHelper:
             if os.path.exists(cookie_jar_path):
                 session.cookies.load(ignore_discard=True, ignore_expires=True)
         try:
-            response = session.get(url, headers=self.stdHeader, verify=self.verify, timeout=60)
+            response = session.get(url, headers=self.stdHeader, timeout=60)
         except RequestException as error:
             raise ConnectionError(f"Connection error: {str(error)}") from None
 
@@ -120,7 +122,7 @@ class RequestHelper:
 
         return response, session
 
-    def post_REST(self, function: str, data: {str: str} = None, timeout: str = 60) -> object:
+    def post_REST(self, function: str, data: Dict[str,str] = None, timeout: str = 60) -> object:
         """
         Sends a POST request to the REST endpoint of the Moodle system
         @param function: The Web service function to be called.
@@ -142,10 +144,11 @@ class RequestHelper:
 
         error_ctr = 0
         maxretries = 5
+        session = custom_session(self.verify)
         while True:
             try:
-                response = requests.post(
-                    url, data=data_urlencoded, headers=self.stdHeader, verify=self.verify, timeout=timeout
+                response = session.post(
+                    url, data=data_urlencoded, headers=self.stdHeader, timeout=timeout
                 )
                 break
             except (requests.ConnectionError, requests.Timeout) as error:
@@ -199,7 +202,7 @@ class RequestHelper:
 
         return RequestHelper.recursive_urlencode(data)
 
-    def get_login(self, data: {str: str}) -> object:
+    def get_login(self, data: Dict[str,str]) -> object:
         """
         Sends a POST request to the login endpoint of the Moodle system to
         obtain a token in JSON format.
@@ -208,12 +211,12 @@ class RequestHelper:
         @return: The JSON response returned by the Moodle System, already
         checked for errors.
         """
+        session = custom_session(self.verify)
         try:
-            response = requests.post(
+            response = session.post(
                 f'{self.url_base}login/token.php',
                 data=urllib.parse.urlencode(data),
                 headers=self.stdHeader,
-                verify=self.verify,
                 timeout=60,
             )
         except RequestException as error:
@@ -232,7 +235,7 @@ class RequestHelper:
                 + f'\nResponse: {response.text}'
             )
 
-    def get_simple_moodle_version(self) -> float:
+    def get_simple_moodle_version(self) -> str:
         """
         Query the version by looking up the change-log (/lib/upgrade.txt)
         of the Moodle
@@ -242,7 +245,8 @@ class RequestHelper:
 
         url = f'{self.url_base}lib/upgrade.txt'
         try:
-            response = requests.get(url, headers=self.stdHeader, verify=self.verify, timeout=60)
+            session = custom_session(self.verify)
+            response = session.get(url, headers=self.stdHeader, timeout=60)
         except RequestException as error:
             raise ConnectionError(f"Connection error: {str(error)}") from None
 
