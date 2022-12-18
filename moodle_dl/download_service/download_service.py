@@ -123,8 +123,9 @@ class DownloadService:
                     self.total_files += 1
                 else:
                     old_name = file.saved_to
-                    filepath = old_name.rpartition("\\")
-                    file.saved_to = filepath[0] + "\\[DELETED] " + filepath[2]
+                    filepath, filename = os.path.split(file.saved_to)
+                    file.saved_to = os.path.join(filepath, "[DELETED] " + filename)
+                    file.saved_to = PathTools.get_path_of_non_existent_file(file.saved_to)
                     os.rename(old_name, file.saved_to)
 
         # delete files, that should be deleted

@@ -11,6 +11,30 @@ class PathTools:
     restricted_filenames = False
 
     @staticmethod
+    def get_path_of_non_existent_file(wish_path: str) -> str:
+        """Generates a path to a non existing file, based on a wish path
+
+        Args:
+            wish_path (str): the ideal path that is wished
+
+        Returns:
+            str: a path to a non existing file
+        """
+        new_path = wish_path
+
+        count = 0
+        content_filename = os.path.basename(wish_path)
+        destination = os.path.dirname(wish_path)
+        filename, file_extension = os.path.splitext(content_filename)
+
+        while os.path.exists(new_path):
+            count += 1
+            new_filename = f'{filename}_{count:02d}{file_extension}'
+            new_path = str(Path(destination) / new_filename)
+
+        return new_path
+
+    @staticmethod
     def to_valid_name(name: str) -> str:
         """Filtering invalid characters in filenames and paths.
 
